@@ -1,4 +1,5 @@
 import './globals.css'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const metadata = {
   title: 'PromptScore',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }) {
       </head>
       <body style={{ backgroundColor: '#0a0a0a', margin: 0, minHeight: '100vh' }}>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   )
