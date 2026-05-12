@@ -189,17 +189,35 @@ export default function App() {
   const [improvedPrompt,setImprovedPrompt]= useState(null)
   const [genError,      setGenError]      = useState(null)
   const [copied,        setCopied]        = useState(false)
+  const [isAnalyzing,   setIsAnalyzing]   = useState(false)
 
   const wordCount = prompt.trim() === '' ? 0 : prompt.trim().split(/\s+/).length
   const isEmpty   = prompt.trim() === ''
+
+  const EXAMPLES = [
+    'Write me a blog post about AI',
+    'Summarize this document',
+    'Help me with my resume',
+  ]
 
   // Attempt table setup on mount (best-effort, non-blocking)
   useEffect(() => {
     fetch('/api/setup-db').catch(() => {})
   }, [])
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true)
+    setResults(null)
+    setImprovedPrompt(null)
+    // Brief pause so the spinner is visible and feels like real analysis
+    await new Promise(r => setTimeout(r, 600))
     setResults(scorePrompt(prompt))
+    setIsAnalyzing(false)
+  }
+
+  const handleLoadExample = (example) => {
+    setPrompt(example)
+    setResults(null)
     setImprovedPrompt(null)
   }
 
@@ -293,20 +311,54 @@ export default function App() {
             {wordCount} {wordCount === 1 ? 'word' : 'words'}
           </div>
 
+          {/* Example prompts */}
+          <div className="mt-3 mb-1">
+            <p className="text-xs mb-2" style={{ color: '#374151' }}>Try an example:</p>
+            <div className="flex flex-wrap gap-2">
+              {EXAMPLES.map((ex) => (
+                <button
+                  key={ex}
+                  onClick={() => handleLoadExample(ex)}
+                  className="text-xs px-3 py-1.5 rounded-lg transition-all duration-150"
+                  style={{ backgroundColor: '#161616', color: '#6b7280', border: '1px solid #1f1f1f', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3f3f3f'; e.currentTarget.style.color = '#9ca3af' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1f1f1f'; e.currentTarget.style.color = '#6b7280' }}
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Analyze button */}
           <button
-            disabled={isEmpty}
+            disabled={isEmpty || isAnalyzing}
             onClick={handleAnalyze}
-            className="mt-4 w-full py-4 rounded-2xl text-base font-semibold tracking-wide"
+            className="mt-4 w-full py-4 rounded-2xl text-base font-semibold tracking-wide flex items-center justify-center gap-2"
             style={
-              isEmpty
+              isEmpty || isAnalyzing
                 ? { backgroundColor: '#161616', color: '#3f3f3f', cursor: 'not-allowed', border: '1px solid #1f1f1f' }
                 : { backgroundColor: '#ffffff', color: '#0a0a0a', cursor: 'pointer', transition: 'background-color 0.2s' }
             }
-            onMouseEnter={(e) => { if (!isEmpty) e.currentTarget.style.backgroundColor = '#e5e7eb' }}
-            onMouseLeave={(e) => { if (!isEmpty) e.currentTarget.style.backgroundColor = '#ffffff' }}
+            onMouseEnter={(e) => { if (!isEmpty && !isAnalyzing) e.currentTarget.style.backgroundColor = '#e5e7eb' }}
+            onMouseLeave={(e) => { if (!isEmpty && !isAnalyzing) e.currentTarget.style.backgroundColor = '#ffffff' }}
           >
-            Analyze Prompt
+            {isAnalyzing ? (
+              <>
+                <svg
+                  className="animate-spin"
+                  style={{ width: 16, height: 16 }}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ opacity: 0.25 }} />
+                  <path fill="currentColor" style={{ opacity: 0.75 }} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Analyzing&hellip;
+              </>
+            ) : (
+              'Analyze Prompt'
+            )}
           </button>
 
           {/* ── RESULTS ── */}
